@@ -46,6 +46,17 @@ class SwapPacket(CcPacket):
     smart_encrypt_pwd = None
     aes_encrypt_pwd = None
 
+    @staticmethod
+    def binf_to_sbinf(binf):
+        """
+        Convert binary formatted data (bytes) to a string binary format.
+        If any bytes item is out of range of a single byte, replace it with
+        a zeroed byte.
+        
+        @param binf: list of binary items (bytes)
+        """
+        return ''.join([chr(item) if 0<=item<=255 else chr(0) for item in binf])
+
     def aes_encryption(self, password, decrypt=False):
         """
         Encrypt/Decrypt packet using the Smart Encryption mechanism
@@ -62,7 +73,7 @@ class SwapPacket(CcPacket):
         # Data in binary format
         data = self.data[4:]
         # Data in binary string format
-        strdata = ''.join([chr(item) for item in self.data[4:]])
+        strdata = binf_to_sbinf(data)
  
         # Number of iterations
         loops = data_length / 16
@@ -73,10 +84,10 @@ class SwapPacket(CcPacket):
         init_nonce = []
         for i in range(0,4):
             for j in range(0,4):
-                init_nonce.append(self.data[j])                             
+                init_nonce.append(self.data[j])
         
         # Password in binary string format
-        strpwd = ''.join([chr(item) for item in password.data])       
+        strpwd = binf_to_sbinf(password.data)
         
         encryptor = AES.new(strpwd)
         
@@ -111,8 +122,8 @@ class SwapPacket(CcPacket):
                 self.regId = data[2]
                 if len(data[3:]) > 0:
                     self.value = SwapValue(data[3:])
-                
-        
+
+    
     def smart_encryption(self, password, decrypt=False):
         """
         Encrypt/Decrypt packet using the Smart Encryption mechanism
