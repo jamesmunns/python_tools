@@ -3,22 +3,22 @@
 # SerialPort
 #
 # Copyright (c) 2011 panStamp <contact@panstamp.com>
-# 
+#
 # This file is part of the panStamp project.
-# 
+#
 # panStamp  is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # any later version.
-# 
+#
 # panStamp is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Lesser General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Lesser General Public License
 # along with panStamp; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301
 # USA
 #
 #########################################################################
@@ -58,16 +58,16 @@ class SerialPort(threading.Thread):
                     try:
                         # Read single byte (non blocking function)
                         ch = self._serport.read()
-                        if len(ch) > 0: 
+                        if len(ch) > 0:
                             # End of serial packet?
                             if ch == '\r' or ((ch == '(') and (len(serbuf) > 0)):
                                 strBuf = "".join(serbuf)
                                 serbuf = []
-        
+
                                 # Enable for debug only
                                 if self._verbose == True:
                                     print "Rved: " + strBuf
-                                
+
                                 # Notify reception
                                 if self.serial_received is not None:
                                     try:
@@ -83,16 +83,16 @@ class SerialPort(threading.Thread):
                         raise SwapException("Serial port " + self.portname + " not available")
                     except OSError:
                         raise SwapException(str(sys.exc_type) + ": " + str(sys.exc_info()))
-           
-                    # Anything to be sent?                   
+
+                    # Anything to be sent?
                     #self._send_lock.acquire()
                     if not self._strtosend.empty():
                         if time.time() - self.last_transmission_time > SerialPort.txdelay:
-                            strpacket = self._strtosend.get()          
+                            strpacket = self._strtosend.get()
                             # Send serial packet
-                            self._serport.write(strpacket) 
+                            self._serport.write(strpacket)
                             # Update time stamp
-                            self.last_transmission_time = time.time()                       
+                            self.last_transmission_time = time.time()
                             # Enable for debug only
                             if self._verbose == True:
                                 print "Sent: " + strpacket
@@ -103,7 +103,7 @@ class SerialPort(threading.Thread):
             raise SwapException("Unable to read serial port " + self.portname + " since it is not open")
         print "Closing serial port..."
 
-    
+
     def stop(self):
         """
         Stop serial port
@@ -114,12 +114,12 @@ class SerialPort(threading.Thread):
                 self._serport.flushInput()
                 self._serport.flushOutput()
                 self._serport.close()
-                
+
 
     def send(self, buf):
         """
         Send string buffer via serial
-        
+
         @param buf: Packet to be transmitted
         """
         #self._send_lock.acquire()
@@ -131,7 +131,7 @@ class SerialPort(threading.Thread):
         """
         Set callback reception function. This function is called whenever a new serial packet
         is received from the gateway
-        
+
         @param cb_function: User-defined callback function
         """
         self.serial_received = cb_function
@@ -142,20 +142,23 @@ class SerialPort(threading.Thread):
         Hardware reset serial modem
         """
         # Clear DTR/RTS lines
-        self._serport.setDTR(False)
-        self._serport.setRTS(False)
+        off = self.invert_dtr_rts
+        on = not self.invert_dtr_rts
+
+        self._serport.setDTR(off)
+        self._serport.setRTS(off)
 
         time.sleep(0.001)
 
         # Set DTR/R lines
-        self._serport.setDTR(True)
-        self._serport.setRTS(True)
+        self._serport.setDTR(on)
+        self._serport.setRTS(on)
 
-           
-    def __init__(self, portname="/dev/ttyUSB0", speed=38400, verbose=False):
+
+    def __init__(self, portname="/dev/ttyUSB0", speed=38400, verbose=False, invert_dtr_rts=False):
         """
         Class constructor
-        
+
         @param portname: Name/path of the serial port
         @param speed: Serial baudrate in bps
         @param verbose: Print out SWAP traffic (True or False)
@@ -176,7 +179,9 @@ class SerialPort(threading.Thread):
         self._verbose = verbose
         # Time stamp of the last transmission
         self.last_transmission_time = 0
-        
+
+        self.invert_dtr_rts = invert_dtr_rts
+
         try:
             # Open serial port in blocking mode
             self._serport = serial.Serial(self.portname, self.portspeed, timeout=0)
@@ -188,6 +193,6 @@ class SerialPort(threading.Thread):
             self._serport.writeTimeout = 1
             # Reset modem
             self.reset()
-            
+
         except serial.SerialException as ex:
             raise SwapException(str(ex))
