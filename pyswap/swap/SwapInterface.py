@@ -3,22 +3,22 @@
 # SwapInterface
 #
 # Copyright (c) 2011 panStamp <contact@panstamp.com>
-# 
+#
 # This file is part of the panStamp project.
-# 
+#
 # panStamp  is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # any later version.
-# 
+#
 # panStamp is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Lesser General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Lesser General Public License
 # along with panStamp; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301
 # USA
 #
 #########################################################################
@@ -37,11 +37,11 @@ class SwapInterface:
     def swapServerError(self, ex):
         """
         SWAP server error detected
-        
+
         @param ex exception
         """
         pass
-    
+
     def swapServerStarted(self):
         """
         SWAP server started successfully
@@ -52,25 +52,25 @@ class SwapInterface:
     def swapPacketReceived(self, packet):
         """
         New SWAP packet received
-        
+
         @param packet: SWAP packet received
         """
         pass
-    
+
 
     def swapPacketSent(self, packet):
         """
         SWAP packet transmitted
-        
+
         @param packet: SWAP packet transmitted
         """
         pass
-    
+
 
     def newMoteDetected(self, mote):
         """
         New mote detected by SWAP server
-        
+
         @param mote: mote detected
         """
         pass
@@ -79,16 +79,16 @@ class SwapInterface:
     def newParameterDetected(self, parameter):
         """
         New configuration parameter detected by SWAP server
-        
+
         @param parameter: Endpoint detected
         """
         pass
-    
-    
+
+
     def newEndpointDetected(self, endpoint):
         """
         New endpoint detected by SWAP server
-        
+
         @param endpoint: Endpoint detected
         """
         pass
@@ -97,16 +97,16 @@ class SwapInterface:
     def moteStateChanged(self, mote):
         """
         Mote state changed
-        
+
         @param mote: Mote having changed
         """
         pass
- 
+
 
     def moteAddressChanged(self, mote):
         """
         Mote address changed
-        
+
         @param mote: Mote having changed
         """
         pass
@@ -115,25 +115,25 @@ class SwapInterface:
     def registerValueChanged(self, register):
         """
         Register value changed
-        
+
         @param register: Register having changed
         """
         pass
-    
-    
+
+
     def endpointValueChanged(self, endpoint):
         """
         Endpoint value changed
-        
+
         @param endpoint: Endpoint having changed
         """
         pass
-    
-    
+
+
     def parameterValueChanged(self, parameter):
         """
         Configuration parameter changed
-        
+
         @param parameter: configuration parameter having changed
         """
         pass
@@ -149,10 +149,10 @@ class SwapInterface:
     def getMote(self, index=None, address=None):
         """
         Return mote from list
-        
+
         @param index: Index of the mote within lstMotes
         @param address: SWAP address of the mote
-        
+
         @return mote
         """
         return self.server.network.get_mote(index, address)
@@ -161,11 +161,11 @@ class SwapInterface:
     def setMoteRegister(self, mote, regId, value):
         """
         Set new register value on wireless mote
-        
+
         @param mote: Mote targeted by this command
         @param regId: Register ID
         @param value: New register value
-        
+
         @return True if the command is correctly ack'ed. Return False otherwise
         """
         return self.server.setMoteRegister(mote, regId, value)
@@ -175,13 +175,26 @@ class SwapInterface:
         """
         Query mote register, wait for response and return value
         Non re-entrant method!!
-        
+
         @param mote: Mote to be queried
         @param regID: Register ID
-        
+
         @return register value
         """
         return self.server.queryMoteRegister(mote, regId)
+
+
+    def queryMoteRegisterNoRetry(self, mote, regId, maxWaitMs):
+        """
+        Query mote register, wait for response and return value
+        Non re-entrant method!!
+
+        @param mote: Mote to be queried
+        @param regID: Register ID
+
+        @return register value
+        """
+        return self.server.queryMoteRegisterNoRetry(mote, regId, maxWaitMs)
 
 
     def create_server(self):
@@ -190,14 +203,14 @@ class SwapInterface:
         """
         self.server = SwapServer(self, self.verbose)
         return self.server
-        
+
 
     def start_server(self):
         """
         Start SWAP server
         """
         self.server.start()
-        
+
 
     def stop(self):
         """
@@ -209,13 +222,13 @@ class SwapInterface:
     def get_endpoint(self, endpid=None, location=None, name=None):
         """
         Get endpoint given its unique id or location.name pair
-        
+
         @param endpid endpoint id
         @param location endpoint location
         @param name endpoint name
-        
+
         @return endpoint object
-        """    
+        """
         for mote in self.network.motes:
             for register in mote.regular_registers:
                 for endpoint in register.parameters:
@@ -246,7 +259,7 @@ class SwapInterface:
         self.server = None
         ## Network data
         self.network = None
-                       
+
         if start:
             print "SWAP server starting... "
         try:
