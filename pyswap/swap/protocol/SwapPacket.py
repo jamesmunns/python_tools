@@ -92,7 +92,7 @@ class SwapPacket(CcPacket):
         encryptor = AES.new(strpwd)
 
         for i in range(0, loops):
-            str_nonce = ''.join([chr(item) for item in init_nonce])
+            str_nonce = self.binf_to_sbinf(init_nonce)
             encrypted_count = encryptor.encrypt(str_nonce)
             # XOR encypted count against data
             for j in range(0,16):
