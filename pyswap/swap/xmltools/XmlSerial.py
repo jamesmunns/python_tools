@@ -55,7 +55,7 @@ class XmlSerial(object):
         # Get serial pin invert
         elem = root.find("invert")
         if elem is not None:
-            self.invert = int(elem.text)
+            self.invert = elem.text.lower() in ["true", "enabled", "yes"]
 
     def save(self):
         """
