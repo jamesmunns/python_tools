@@ -3,22 +3,22 @@
 # SwapPacket
 #
 # Copyright (c) 2011 panStamp <contact@panstamp.com>
-# 
+#
 # This file is part of the panStamp project.
-# 
+#
 # panStamp  is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # any later version.
-# 
+#
 # panStamp is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Lesser General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Lesser General Public License
 # along with panStamp; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301
 # USA
 #
 # Author: Daniel Berenguer
@@ -52,7 +52,7 @@ class SwapPacket(CcPacket):
         Convert binary formatted data (bytes) to a string binary format.
         If any bytes item is out of range of a single byte, replace it with
         a zeroed byte.
-        
+
         @param binf: list of binary items (bytes)
         """
         return ''.join([chr(item) if 0<=item<=255 else chr(0) for item in binf])
@@ -60,37 +60,37 @@ class SwapPacket(CcPacket):
     def aes_encryption(self, password, decrypt=False):
         """
         Encrypt/Decrypt packet using the Smart Encryption mechanism
-        
+
         @param password: Smart Encryption password
         @param decrypt:  Decrypt packet if True. Encrypt otherwise
         """
         # Update password
         SwapPacket.aes_encrypt_pwd = password
-        
+
         # Data length
         data_length = len(self.data[4:])
 
         # Data in binary format
         data = self.data[4:]
         # Data in binary string format
-        strdata = binf_to_sbinf(data)
- 
+        strdata = self.binf_to_sbinf(data)
+
         # Number of iterations
         loops = data_length / 16
         if data_length % 16:
             loops += 1
-        
-        # Create initial nonce       
+
+        # Create initial nonce
         init_nonce = []
         for i in range(0,4):
             for j in range(0,4):
                 init_nonce.append(self.data[j])
-        
+
         # Password in binary string format
-        strpwd = binf_to_sbinf(password.data)
-        
+        strpwd = self.binf_to_sbinf(password.data)
+
         encryptor = AES.new(strpwd)
-        
+
         for i in range(0, loops):
             str_nonce = ''.join([chr(item) for item in init_nonce])
             encrypted_count = encryptor.encrypt(str_nonce)
@@ -103,14 +103,14 @@ class SwapPacket(CcPacket):
                     break
             # Increment nonce
             init_nonce[-1] += 1
-        
+
         # Update raw data
         self.data[4:] = data
-        
+
         if not decrypt:
-            # Update packet fields   
+            # Update packet fields
             self.function = data[0] & 0x7F;
-                       
+
             if self.extended_address:
                 self.srcAddress = (data[1] << 8) | data[2]
                 self.regAddress = (data[3] << 8) | data[4]
@@ -123,26 +123,26 @@ class SwapPacket(CcPacket):
                 if len(data[3:]) > 0:
                     self.value = SwapValue(data[3:])
 
-    
+
     def smart_encryption(self, password, decrypt=False):
         """
         Encrypt/Decrypt packet using the Smart Encryption mechanism
-        
+
         @param password: Smart Encryption password
         @param decrypt:  Decrypt packet if True. Encrypt otherwise
         """
         # Update password
         SwapPacket.smart_encrypt_pwd = password
 
-        # Encryot SwapPacket and CcPacket fields               
+        # Encryot SwapPacket and CcPacket fields
         if decrypt:
             self.nonce ^= password.data[9]
-        
+
         self.function ^= password.data[11] ^ self.nonce
         self.srcAddress ^= password.data[10] ^ self.nonce
         self.regAddress ^= password.data[8] ^ self.nonce
         self.regId ^= password.data[7] ^ self.nonce
-        
+
         if self.value is not None:
             pos = 0
             newarray = []
@@ -158,24 +158,24 @@ class SwapPacket(CcPacket):
             self.nonce ^= password.data[9]
 
         self._update_ccdata()
-            
-        
+
+
     def send(self, server):
         """
         Overriden send method
-        
+
         @param server: SWAP server object to be used for transmission
         """
         self.srcAddress = server.devaddress
         self.data[1] = self.srcAddress
-        
+
         # Update security option according to server's one
         self.security = server.security
         self.data[2] |= self.security & 0x0F
 
         # Keep copy of the current packet before encryption
         packet_before_encrypt = copy.copy(self)
-        
+
         # Smart encryption enabled?
         if self.security & 0x02:
             # Encrypt packet
@@ -184,18 +184,18 @@ class SwapPacket(CcPacket):
         elif self.security & 0x04:
             # Encrypt packet
             self.aes_encryption(server.password)
-        
+
         CcPacket.send(self, server.modem)
-        # Notify event        
+        # Notify event
         server._eventHandler.swapPacketSent(packet_before_encrypt)
-        
-        
+
+
     def _update_ccdata(self):
         """
         Update ccPacket data bytes
         """
         self.data = []
-        
+
         if self.extended_address:
             """
             self.data[0] = (self.destAddress >> 8) & 0x0F
@@ -208,11 +208,11 @@ class SwapPacket(CcPacket):
             """
             self.data.append((self.destAddress >> 8) & 0x0F)
             self.data.append(self.destAddress & 0x0F)
-            
+
             self.data.append((self.hop << 4) | (self.security & 0x0F))
             self.data.append(self.nonce)
             self.data.append(self.function | (self.extended_address * (0x80)))
-            
+
             self.data.append((self.srcAddress >> 8) & 0x0F)
             self.data.append(self.srcAddress & 0x0F)
             self.data.append((self.regAddress >> 8) & 0x0F)
@@ -227,19 +227,19 @@ class SwapPacket(CcPacket):
             """
 
             self.data.append(self.destAddress)
-            self.data.append(self.srcAddress)       
+            self.data.append(self.srcAddress)
             self.data.append((self.hop << 4) | (self.security & 0x0F))
             self.data.append(self.nonce)
             self.data.append(self.function | (self.extended_address * (0x80)))
             self.data.append(self.srcAddress)
             self.data.append(self.regId)
-            
+
         """
         self.data[2] = (self.hop << 4) | (self.security & 0x0F)
         self.data[3] = self.nonce
-        self.data[4] = self.function | (self.extended_address * (0x80))       
+        self.data[4] = self.function | (self.extended_address * (0x80))
         """
-        
+
         if self.value is not None:
             for item in self.value.toList():
                 self.data.append(item)
@@ -248,15 +248,15 @@ class SwapPacket(CcPacket):
     def __init__(self, ccPacket=None, destAddr=SwapAddress.BROADCAST_ADDR, hop=0, nonce=0, function=SwapFunction.STATUS, regAddr=0, regId=0, value=None, extended_addr=False):
         """
         Class constructor
-        
+
         @param ccPacket: Raw CcPacket where to take the information from
         @param destAddr: Destination address
         @param hop: Transmission hop count
         @param nonce: Security nonce
         @param function: SWAP function code (see SwapDefs.SwapFunction for more details)
-        @param regAddr: Register address (address of the mote where the register really resides)   
+        @param regAddr: Register address (address of the mote where the register really resides)
         @param regId: Register ID
-        @param value: Register value  
+        @param value: Register value
         """
         CcPacket.__init__(self)
 
@@ -285,14 +285,14 @@ class SwapPacket(CcPacket):
         if ccPacket is not None:
             if len(ccPacket.data) < 7:
                 raise SwapException("Packet received is too short")
-                        
+
             # Hop count for repeating purposes
             self.hop = (ccPacket.data[2] >> 4) & 0x0F
             # Security option
             self.security = ccPacket.data[2] & 0x0F
             # Security nonce
             self.nonce = ccPacket.data[3]
-                                        
+
             # Superclass attributes
             ## RSSI byte
             self.rssi = ccPacket.rssi
@@ -300,7 +300,7 @@ class SwapPacket(CcPacket):
             self.lqi = ccPacket.lqi
             ## CcPacket data field
             self.data = ccPacket.data
-                        
+
             # Smart Encryption enabled?
             if self.security & 0x02 and SwapPacket.smart_encrypt_pwd is not None:
                 # Decrypt packet
@@ -316,7 +316,7 @@ class SwapPacket(CcPacket):
             self.function = ccPacket.data[4] & 0x7F
             # Extended address indicator
             self.extended_address = (ccPacket.data[4] & 0x80) != 0
-            
+
             if self.extended_address:
                 # Destination address
                 self.destAddress = (ccPacket.data[0] << 8) | ccPacket.data[1]
@@ -341,11 +341,11 @@ class SwapPacket(CcPacket):
                 self.regId = ccPacket.data[6]
                 # Register value
                 if len(ccPacket.data) >= 8:
-                    self.value = SwapValue(ccPacket.data[7:])        
-        
+                    self.value = SwapValue(ccPacket.data[7:])
+
         else:
             self._update_ccdata()
-            
+
 
 class SwapStatusPacket(SwapPacket):
     """
@@ -354,13 +354,13 @@ class SwapStatusPacket(SwapPacket):
     def __init__(self, rAddr, rId, val, extended_addr=False):
         """
         Class constructor
-        
+
         @param rAddr: Register address
         @param rId: Register ID
         @param val: New value
         """
         SwapPacket.__init__(self, regAddr=rAddr, regId=rId, value=val, extended_addr=extended_addr)
- 
+
 
 class SwapQueryPacket(SwapPacket):
     """
@@ -369,13 +369,13 @@ class SwapQueryPacket(SwapPacket):
     def __init__(self, rAddr=SwapAddress.BROADCAST_ADDR, rId=0, extended_addr=False):
         """
         Class constructor
-        
+
         @param rAddr: Register address
         @param rId: Register ID
         """
         SwapPacket.__init__(self, destAddr=rAddr, function=SwapFunction.QUERY, regAddr=rAddr, regId=rId, extended_addr=extended_addr)
-        
-        
+
+
 class SwapCommandPacket(SwapPacket):
     """
     SWAP Command packet class
@@ -383,7 +383,7 @@ class SwapCommandPacket(SwapPacket):
     def __init__(self, rAddr, rId, val, nonce=0, extended_addr=False):
         """
         Class constructor
-        
+
         @param rAddr: Register address
         @param rId: Register ID
         @param val: New value
